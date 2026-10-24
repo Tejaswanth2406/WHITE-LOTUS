@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../data/file_system/local_media_store.dart';
+import '../../design_system/blinking_mask.dart';
 import '../../design_system/glass_panel.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -387,11 +388,14 @@ class _MaskHeroPanel extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Image.asset(
-                  'assets/images/white_lotus_logo.png',
-                  fit: BoxFit.contain,
+              child: ClipOval(
+                child: BlinkingMask(
+                  image: const AssetImage('assets/images/dashboard_mask.png'),
+                  size: maskSize + 14,
+                  // The supplied mask artwork uses black for the eye openings.
+                  lidColor: Colors.black,
+                  minPause: const Duration(milliseconds: 1800),
+                  maxPause: const Duration(milliseconds: 4200),
                 ),
               ),
             ),

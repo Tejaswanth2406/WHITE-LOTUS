@@ -48,6 +48,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   int _wallpaperIndex = 2;
+  double _wallpaperDim = 40;
   Uint8List? _wallpaperImage;
 
   LocalMediaStore get _store => widget.store ?? localMediaStore;
@@ -94,8 +95,8 @@ class _MainShellState extends State<MainShell> {
               : DecorationImage(
                   image: MemoryImage(_wallpaperImage!),
                   fit: BoxFit.cover,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0x66000000),
+                  colorFilter: ColorFilter.mode(
+                    Color.fromRGBO(0, 0, 0, _wallpaperDim / 100),
                     BlendMode.darken,
                   ),
                 ),
@@ -205,6 +206,10 @@ class _MainShellState extends State<MainShell> {
         key: const ValueKey('settings'),
         selectedWallpaperIndex: _wallpaperImage == null ? _wallpaperIndex : -1,
         selectedWallpaperImage: _wallpaperImage,
+        wallpaperDim: _wallpaperDim,
+        onWallpaperDimChanged: (value) => setState(() {
+          _wallpaperDim = value;
+        }),
         onSelectWallpaper: (index) => setState(() {
           _wallpaperIndex = index;
           _wallpaperImage = null;

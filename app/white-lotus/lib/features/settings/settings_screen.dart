@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 
+import '../../design_system/elastic_slider.dart';
 import '../../design_system/glass_panel.dart';
 import '../../design_system/option_wheel.dart';
 
@@ -12,14 +13,18 @@ class SettingsScreen extends StatefulWidget {
     super.key,
     required this.selectedWallpaperIndex,
     required this.selectedWallpaperImage,
+    required this.wallpaperDim,
     required this.onSelectWallpaper,
     required this.onSelectWallpaperImage,
+    required this.onWallpaperDimChanged,
   });
 
   final int selectedWallpaperIndex;
   final Uint8List? selectedWallpaperImage;
+  final double wallpaperDim;
   final ValueChanged<int> onSelectWallpaper;
   final ValueChanged<Uint8List> onSelectWallpaperImage;
+  final ValueChanged<double> onWallpaperDimChanged;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -193,6 +198,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               : const Icon(Icons.add_photo_alternate_rounded),
                           label: Text(
                             _isPickingWallpaper ? 'Opening…' : 'Choose image',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Wallpaper dimming',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Adjust contrast over your custom wallpaper.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withAlpha(145),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.wb_sunny_outlined, size: 17),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElasticSlider(
+                            value: widget.wallpaperDim,
+                            startingValue: 0,
+                            maxValue: 80,
+                            length: 260,
+                            leftIcon: const SizedBox.shrink(),
+                            rightIcon: const Icon(
+                              Icons.contrast_rounded,
+                              size: 17,
+                            ),
+                            valuePosition: ElasticValuePosition.none,
+                            formatValue: (value) => '${value.round()}%',
+                            rangeColor: const Color(0xFFA9B9FF),
+                            trackColor: Colors.white.withAlpha(45),
+                            semanticLabel: 'Wallpaper dimming',
+                            onChanged: widget.onWallpaperDimChanged,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: 38,
+                          child: Text(
+                            '${widget.wallpaperDim.round()}%',
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(fontSize: 10),
                           ),
                         ),
                       ],

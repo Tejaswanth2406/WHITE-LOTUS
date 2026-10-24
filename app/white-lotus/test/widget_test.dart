@@ -13,6 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:white_lotus/app.dart';
 import 'package:white_lotus/data/file_system/local_media_store.dart';
+import 'package:white_lotus/design_system/blinking_mask.dart';
+import 'package:white_lotus/design_system/elastic_slider.dart';
+import 'package:white_lotus/design_system/grid_motion.dart';
 import 'package:white_lotus/features/dashboard/dashboard_screen.dart';
 import 'package:white_lotus/features/files/file_system_screen.dart';
 import 'package:white_lotus/features/images/screenshot_gallery_screen.dart';
@@ -29,6 +32,7 @@ void main() {
     expect(find.text('WHITE LOTUS'), findsOneWidget);
     expect(find.byType(DashboardScreen), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
+    expect(find.byType(BlinkingMask), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (widget) =>
@@ -38,6 +42,16 @@ void main() {
                 'assets/images/white_lotus_logo.png',
       ),
       findsWidgets,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/dashboard_mask.png',
+      ),
+      findsOneWidget,
     );
     expect(find.text('Everything in its place.'), findsOneWidget);
     expect(find.text('Open files'), findsOneWidget);
@@ -53,6 +67,40 @@ void main() {
 
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
+  });
+
+  testWidgets('dashboard mask animates its eyelids', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: BlinkingMask(
+            image: AssetImage('assets/images/dashboard_mask.png'),
+            minPause: Duration.zero,
+            maxPause: Duration.zero,
+            closeDuration: Duration(milliseconds: 100),
+            openDuration: Duration(milliseconds: 100),
+            doubleBlinkChance: 0,
+          ),
+        ),
+      ),
+    );
+    final maskPainter = find.descendant(
+      of: find.byType(BlinkingMask),
+      matching: find.byType(CustomPaint),
+    );
+    await tester.pump();
+    final initialPainter = tester
+        .widget<CustomPaint>(maskPainter)
+        .painter!;
+
+    await tester.pump(const Duration(milliseconds: 40));
+    await tester.pump(const Duration(milliseconds: 40));
+    final animatedPainter = tester
+        .widget<CustomPaint>(maskPainter)
+        .painter!;
+
+    expect(animatedPainter.shouldRepaint(initialPainter), isTrue);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('compact layout gives the dashboard room beside menu access', (
@@ -128,6 +176,11 @@ void main() {
     expect(find.text('Black'), findsOneWidget);
     expect(find.text('Burgundy'), findsOneWidget);
     expect(find.text('Navy blue'), findsOneWidget);
+    expect(find.byType(ElasticSlider), findsOneWidget);
+    expect(find.text('40%'), findsOneWidget);
+    await tester.drag(find.byType(Slider), const Offset(70, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('40%'), findsNothing);
 
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
@@ -143,6 +196,30 @@ void main() {
 
     expect(find.text('No screenshots saved yet'), findsOneWidget);
     expect(find.text('Import screenshots'), findsOneWidget);
+  });
+
+  testWidgets('screenshots can be viewed in a local GridMotion collage', (
+    tester,
+  ) async {
+    final imageBytes = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+    );
+    final store = _FakeMediaStore(
+      screenshots: const [StoredScreenshot(name: 'screen.png')],
+      screenshotContents: {'screen.png': imageBytes},
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: ScreenshotGalleryScreen(store: store)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Show motion grid'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byType(GridMotion), findsOneWidget);
+    expect(find.byTooltip('Show screenshot grid'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Files provides navigation, import, and folder controls', (
@@ -213,10 +290,14 @@ class _FakeMediaStore implements LocalMediaStore {
   _FakeMediaStore({
     this.managedFiles = const [],
     this.managedFileContents = const {},
+    this.screenshots = const [],
+    this.screenshotContents = const {},
   });
 
   final List<StoredManagedFile> managedFiles;
   final Map<String, Uint8List> managedFileContents;
+  final List<StoredScreenshot> screenshots;
+  final Map<String, Uint8List> screenshotContents;
 
   @override
   Future<List<StoredManagedFile>> listManagedFiles({
@@ -297,12 +378,12 @@ class _FakeMediaStore implements LocalMediaStore {
   Future<List<StoredOfflineMap>> listOfflineMaps() async => const [];
 
   @override
-  Future<List<StoredScreenshot>> listScreenshots() async => const [];
+  Future<List<StoredScreenshot>> listScreenshots() async => screenshots;
 
   @override
-  Future<Uint8List> readScreenshot(String name) {
-    throw UnimplementedError();
-  }
+  Future<Uint8List> readScreenshot(String name) async =>
+      screenshotContents[name] ??
+      (throw StateError('No screenshot named $name'));
 
   @override
   Future<String?> offlineMapPath(String id) async => null;

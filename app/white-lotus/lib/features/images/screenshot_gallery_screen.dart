@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show PlatformException;
 
 import '../../data/file_system/local_media_store.dart';
 import '../../design_system/glass_panel.dart';
+import '../../design_system/grid_motion.dart';
 
 class ScreenshotGalleryScreen extends StatefulWidget {
   ScreenshotGalleryScreen({super.key, LocalMediaStore? store})
@@ -20,6 +21,8 @@ class _ScreenshotGalleryScreenState extends State<ScreenshotGalleryScreen> {
   List<StoredScreenshot> _screenshots = const [];
   bool _isLoading = true;
   bool _isImporting = false;
+  bool _motionView = false;
+  Future<List<ImageProvider>>? _motionImages;
   String? _loadError;
 
   @override
@@ -40,6 +43,7 @@ class _ScreenshotGalleryScreenState extends State<ScreenshotGalleryScreen> {
       setState(() {
         _screenshots = screenshots;
         _isLoading = false;
+        _motionImages = null;
       });
     } on Exception catch (error) {
       if (!mounted) return;
@@ -125,6 +129,22 @@ class _ScreenshotGalleryScreenState extends State<ScreenshotGalleryScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: _motionView
+                        ? 'Show screenshot grid'
+                        : 'Show motion grid',
+                    onPressed: _screenshots.isEmpty
+                        ? null
+                        : () => setState(() {
+                            _motionView = !_motionView;
+                            _motionImages ??= _loadMotionImages();
+                          }),
+                    icon: Icon(
+                      _motionView
+                          ? Icons.grid_view_rounded
+                          : Icons.motion_photos_on_rounded,
                     ),
                   ),
                   OutlinedButton.icon(
@@ -215,6 +235,7 @@ class _ScreenshotGalleryScreenState extends State<ScreenshotGalleryScreen> {
         ),
       );
     }
+    if (_motionView) return _buildMotionGallery();
     return GridView.builder(
       itemCount: _screenshots.length,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -290,6 +311,55 @@ class _ScreenshotGalleryScreenState extends State<ScreenshotGalleryScreen> {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Future<List<ImageProvider>> _loadMotionImages() async {
+    final bytes = await Future.wait(
+      _screenshots.map(
+        (screenshot) => widget.store.readScreenshot(screenshot.name),
+      ),
+    );
+    return bytes.map(MemoryImage.new).toList(growable: false);
+  }
+
+  Widget _buildMotionGallery() {
+    return FutureBuilder<List<ImageProvider>>(
+      future: _motionImages,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.broken_image_outlined),
+                const SizedBox(height: 8),
+                const Text('Screenshots could not be loaded.'),
+                TextButton(
+                  onPressed: () => setState(() {
+                    _motionImages = _loadMotionImages();
+                  }),
+                  child: const Text('Try again'),
+                ),
+              ],
+            ),
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return GridMotion(
+          items: snapshot.data!,
+          rows: 4,
+          aspectRatio: 1.45,
+          gap: 10,
+          radius: 14,
+          speed: 20,
+          parallax: .35,
+          dim: .18,
+          borderColor: Colors.white.withAlpha(30),
         );
       },
     );

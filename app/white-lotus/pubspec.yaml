@@ -59,6 +59,7 @@ flutter:
 
   assets:
     - assets/images/white_lotus_logo.png
+    - assets/images/dashboard_mask.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -40,6 +40,9 @@ The app includes:
   multiple pins
 - Black, burgundy, and navy blue appearance choices in Settings
 - A curved, scrollable OptionWheel for selecting the liquid-glass colorway
+- An ElasticSlider control for adjusting contrast on custom wallpapers
+- An optional GridMotion collage of screenshots imported into local storage;
+  the motion view uses local image bytes and does not fetch remote content
 - A Settings wallpaper picker for images saved on the device, including
   downloaded images
 - Local-first architecture boundary for future sync and cloud services
